@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chart Palette</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 16px;
+    background: #ffffff;
+    color: #0b0b0b;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p { margin: 0 0 24px; color: #52514e; font-size: 14px; }
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+  }
+  .chip { height: 96px; border-radius: 8px; }
+  .meta { margin-top: 8px; font-size: 13px; line-height: 1.4; }
+  .meta b { display: block; }
+  .meta span { color: #52514e; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  h2 { font-size: 15px; margin: 40px 0 4px; color: #0b0b0b; }
+  h2 + p { margin-bottom: 16px; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 200px; border-bottom: 1px solid #c3c2b7; }
+  .bars div { flex: 1; border-radius: 4px 4px 0 0; }
+  .pie-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 24px 40px; }
+  .legend { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #52514e; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 8px; background: var(--c);
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chart palette</h1>
+  <p>8 colors, in color wheel order. Series number shown for chart use.</p>
+
+  <div class="swatches">
+    <div><div class="chip" style="background:#d25558"></div><div class="meta"><b>Red · #8</b><span>#d25558</span></div></div>
+    <div><div class="chip" style="background:#e57f43"></div><div class="meta"><b>Orange · #2</b><span>#e57f43</span></div></div>
+    <div><div class="chip" style="background:#d9a21b"></div><div class="meta"><b>Yellow · #4</b><span>#d9a21b</span></div></div>
+    <div><div class="chip" style="background:#4da533"></div><div class="meta"><b>Green · #6</b><span>#4da533</span></div></div>
+    <div><div class="chip" style="background:#1fa8b8"></div><div class="meta"><b>Teal · #3</b><span>#1fa8b8</span></div></div>
+    <div><div class="chip" style="background:#4684d1"></div><div class="meta"><b>Blue · #1</b><span>#4684d1</span></div></div>
+    <div><div class="chip" style="background:#854fb8"></div><div class="meta"><b>Purple · #7</b><span>#854fb8</span></div></div>
+    <div><div class="chip" style="background:#cb5882"></div><div class="meta"><b>Pink · #5</b><span>#cb5882</span></div></div>
+  </div>
+
+  <h2>Bar chart — series order</h2>
+  <p>Fixed order: blue, orange, teal, yellow, pink, green, purple, red. Same color always means the same category.</p>
+  <div class="bars" id="bars"></div>
+
+  <h2>Pie chart — series order, clockwise from 12 o'clock</h2>
+  <p>Largest slice first is a separate decision; the colors stay tied to the category, not the size.</p>
+  <div class="pie-wrap">
+    <svg id="pie" viewBox="-110 -110 220 220" width="240" height="240" aria-hidden="true"></svg>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <script>
+    var S = [
+      { n: "Blue",   h: "#4684d1", v: 30 }, { n: "Orange", h: "#e57f43", v: 22 },
+      { n: "Teal",   h: "#1fa8b8", v: 16 }, { n: "Yellow", h: "#d9a21b", v: 12 },
+      { n: "Pink",   h: "#cb5882", v: 8 },  { n: "Green",  h: "#4da533", v: 6 },
+      { n: "Purple", h: "#854fb8", v: 4 },  { n: "Red",    h: "#d25558", v: 2 }
+    ];
+    var max = Math.max.apply(null, S.map(function (s) { return s.v; }));
+    document.getElementById("bars").innerHTML = S.map(function (s) {
+      return '<div style="height:' + (s.v / max * 100) + '%;background:' + s.h + '"></div>';
+    }).join("");
+
+    var total = S.reduce(function (a, s) { return a + s.v; }, 0), a0 = -Math.PI / 2, r = 100, paths = "";
+    S.forEach(function (s) {
+      var a1 = a0 + s.v / total * 2 * Math.PI, large = a1 - a0 > Math.PI ? 1 : 0;
+      var x0 = r * Math.cos(a0), y0 = r * Math.sin(a0), x1 = r * Math.cos(a1), y1 = r * Math.sin(a1);
+      paths += '<path d="M0 0 L' + x0 + ' ' + y0 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x1 + ' ' + y1 +
+               ' Z" fill="' + s.h + '" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>';
+      a0 = a1;
+    });
+    document.getElementById("pie").innerHTML = paths;
+    document.getElementById("legend").innerHTML = S.map(function (s) {
+      return '<span style="--c:' + s.h + '">' + s.n + '</span>';
+    }).join("");
+  </script>
+</main>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feedback Tracker</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #898781;
+    --line: #e1e0d9;
+    --wash: #f4f4f1;
+    --open-bg: #fdf1e8;
+    --open-fg: #a3430f;
+    --done-bg: #e6f3e1;
+    --done-fg: #2d6a1d;
+    --navy: #153a5b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --line: #2c2c2a; --wash: #232321;
+      --open-bg: #3a2415; --open-fg: #f0a678;
+      --done-bg: #1c3315; --done-fg: #8fd07a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 16px 80px;
+    background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; color: var(--navy); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) h1 { color: var(--ink); } }
+  .sub { margin: 0 0 24px; color: var(--ink-2); font-size: 14px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .count { font-size: 13px; color: var(--ink-2); }
+  .filters { display: inline-flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--wash); margin-left: auto; }
+  .filters button {
+    border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 13px;
+    height: 28px; padding: 0 12px; border-radius: 6px; cursor: pointer;
+  }
+  .filters button[aria-pressed="true"] { background: var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+  h2 {
+    font-size: 11px; letter-spacing: .66px; text-transform: uppercase; font-weight: 700;
+    color: var(--ink-3); margin: 32px 0 8px;
+  }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li.item {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 4px 12px; align-items: start;
+    padding: 16px 0; border-top: 1px solid var(--line);
+  }
+  li.item:last-child { border-bottom: 1px solid var(--line); }
+  .num { color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .title { font-weight: 700; font-size: 15px; }
+  .desc { grid-column: 2; margin: 0; color: var(--ink-2); font-size: 14px; }
+  .src { grid-column: 2; margin: 2px 0 0; color: var(--ink-3); font-size: 12.5px; }
+  .status {
+    grid-row: 1; grid-column: 3; align-self: start;
+    border: 0; font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    height: 26px; padding: 0 12px; border-radius: 13px; cursor: pointer;
+  }
+  .status[data-s="open"] { background: var(--open-bg); color: var(--open-fg); }
+  .status[data-s="done"] { background: var(--done-bg); color: var(--done-fg); }
+  .status:focus-visible, .filters button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  li.item[hidden] { display: none; }
+  .tag { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--ink-3); }
+  .hint { margin-top: 32px; font-size: 12.5px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Feedback tracker</h1>
+  <p class="sub">Dynamic Dashboard sync · 6 Oct 2026. Click a status to switch it between Open and Done.</p>
+
+  <div class="bar">
+    <span class="count" id="count"></span>
+    <div class="filters" role="group" aria-label="Filter">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="open" aria-pressed="false">Open</button>
+      <button type="button" data-f="done" aria-pressed="false">Done</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+  <p class="hint">Status is saved in this browser only.</p>
+</main>
+
+<script>
+  var SECTIONS = [
+    { name: "To do", items: [
+      { id: "hide-controls", s: "done", t: "Hide chart controls when not editing",
+        d: "Across entities / time / Compare, the entity and period dropdowns, and the vertical / horizontal toggle collapse unless the chart is being edited. Keeps the focus on the data and saves vertical space.", src: "Michael" },
+      { id: "no-cards", s: "done", t: "Drop the card around each parent group",
+        d: "One continuous chart, no group borders. A card gets in the way when comparing two parents.", src: "Michael" },
+      { id: "flat-cap", s: "done", t: "Flat left edge on bars",
+        d: "Rounded starts make a bar read like a progress bar filling to 100%. Use a square start at zero.", src: "Natacha, Michael" },
+      { id: "units", s: "done", t: "Show units",
+        d: "A subtle key is enough. The description line removed earlier was the only place units appeared, so they need a new home.", src: "Natacha, Michael" },
+      { id: "save-visibility", s: "done", t: "Make saving obvious while editing",
+        d: "Natacha looked for a Save button and couldn’t find it. The chart’s save is icon-only.", src: "Natacha" },
+      { id: "table", s: "done", t: "A real table of values",
+        d: "A clearer “View data”, the export button visible in the table, and two options: toggle chart / table, or show both together. Not a modal, since two tables can’t be open at once.", src: "Natacha, Michael" },
+      { id: "compare-periods", s: "done", t: "Compare: show the periods and the change between them",
+        d: "The horizontal \u201cwhat changed\u201d chart, always horizontal: the two years at the top, a bar from the zero line in the group color, the change at the right, a number ruler below, and a summary sentence.", src: "Natacha, Michael" },
+      { id: "time-window", s: "done", t: "Across time: show which years the window covers",
+        d: "Every selected entity over the four years, with the window (for example 2021 \u2013 2024) stated at the top. Horizontal: one row per entity with four bars and a scale below. Vertical: entities as groups, years as shades, with a hover tooltip.", src: "Natacha" },
+      { id: "indicator-id", s: "done", t: "Show the indicator ID in the picker",
+        d: "IDs visible and searchable when choosing an indicator. Names are customized per tenant, and clients who work with monitoring and reporting know the IDs. Needs the real ID format.", src: "Additional feedback", tag: "Dummy IDs for now" },
+      { id: "create-flow", s: "done", t: "Don\u2019t ask for an indicator when creating a dashboard",
+        d: "Choosing an indicator makes it feel like creating a chart. Ask for the name only, then open an empty dashboard with a clear Add indicator button.", src: "Additional feedback" },
+      { id: "vertical-limit", s: "done", t: "Allow more than 6 entities in the vertical view",
+        d: "Remove the 6-entity limit on the vertical chart. In the Stacked layout, all selected entities show vertically. If the user then switches to Side by side, the chart rotates to horizontal automatically whenever more than 6 entities are showing.", src: "Your note" },
+      { id: "parent-not-auto", s: "done", t: "Selecting a subsidiary should not add its parent",
+        d: "In the entity picker, ticking a subsidiary must not add the parent automatically, and must not make the parent show as partially selected. The parent is only added when the user ticks it themselves.", src: "Your note" },
+      { id: "check-time-table", s: "done", t: "Check Table and Both views for Across time",
+        d: "These now use the selected year range, so the table columns change with the years picked. Not opened on screen yet.", src: "Claude, not checked on screen" },
+      { id: "check-compare-saved", s: "done", t: "Check the saved horizontal Compare view",
+        d: "The \u201cPERIOD 2023 \u2013 2024\u201d label text appears after saving, but the layout hasn\u2019t been looked at on screen.", src: "Claude, not checked on screen" },
+      { id: "check-tooltips", s: "done", t: "Check the two new tooltip texts on screen",
+        d: "\u201cCompare is only available in horizontal view.\u201d and \u201cVertical is only available for up to 6 entities.\u201d Not looked at on screen yet.", src: "Claude, not checked on screen" },
+      { id: "default-start-year", s: "done", t: "Across time: default start year when the period is 2022 or 2023",
+        d: "Not a problem. The prototype has no data before 2021, but the database may have data for those years, so the default start (period minus three) stays as is.", src: "Resolved by the team" },
+      { id: "vertical-limit-mockups", s: "done", t: "Vertical limit: mockups did not match the dashboard",
+        d: "Vertical charts only work up to 6 entities and rotate to horizontal beyond that, so the 12-entity and 8-year vertical mockups did not match what the dashboard shows. Covered by \u201cAllow more than 6 entities in the vertical view\u201d above.", src: "Claude, possible problem" },
+      { id: "mockup-out-of-date", s: "done", t: "Mockup out of date with the dashboard",
+        d: "compare-options.html no longer matched the dashboard (for example the Period pill placement). Work moved to the dashboard, and the file has since been removed from the folder.", src: "Claude, possible problem" }
+    ]}
+  ];
+
+  var KEY = "feedback-tracker-v1", saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { saved = {}; }
+  var filter = "all", n = 0;
+
+  function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function status(it) { return saved[it.id] || it.s; }
+
+  function render() {
+    n = 0;
+    var open = 0, done = 0;
+    document.getElementById("list").innerHTML = SECTIONS.map(function (sec) {
+      return "<h2>" + esc(sec.name) + "</h2><ol>" + sec.items.map(function (it) {
+        var s = status(it); n++; if (s === "open") open++; else done++;
+        var hidden = filter !== "all" && filter !== s ? " hidden" : "";
+        return '<li class="item"' + hidden + '><span class="num">' + n + '</span>' +
+          '<span class="title">' + esc(it.t) + (it.tag ? '<span class="tag">' + esc(it.tag) + '</span>' : "") + '</span>' +
+          '<button type="button" class="status" data-id="' + it.id + '" data-s="' + s + '" title="Click to switch status">' + s + '</button>' +
+          '<p class="desc">' + esc(it.d) + '</p><p class="src">' + esc(it.src) + '</p></li>';
+      }).join("") + "</ol>";
+    }).join("");
+    document.getElementById("count").textContent = open + " open · " + done + " done";
+  }
+
+  document.getElementById("list").addEventListener("click", function (e) {
+    var b = e.target.closest(".status"); if (!b) return;
+    saved[b.dataset.id] = b.dataset.s === "open" ? "done" : "open";
+    try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (err) {}
+    render();
+  });
+  document.querySelector(".filters").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    filter = b.dataset.f;
+    document.querySelectorAll(".filters button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    render();
+  });
+  render();
+</script>
+</body>
+</html>
